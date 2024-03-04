@@ -1,0 +1,22 @@
+{
+  "name": "ness-color",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "author": "DARK ECNELIS darkecnelis@gmail.com",
+  "license": "BSD 3-Clause",
+  "private": false,
+  "types": "./index.d.ts",
+  "scripts": {
+    "test": "ts-node ./src/test/main.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DARK-ECNELIS/ness-color.git"
+  },
+  "keywords": [],
+  "dependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}
