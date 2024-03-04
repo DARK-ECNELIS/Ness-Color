@@ -1,19 +1,5 @@
-import { ColorType, HEX, HSL, HSV, RGB, RYB } from "..";
+import { CMYK, ColorType, HEX, HSL, HSV, LAB, LCH, RGB, RYB, XYZ } from "..";
 import { colorCheck } from "../Function";
-
-
-
-// interface HSV {
-//     h: number;
-//     s: number;
-//     v: number;
-// }
-
-// interface RYB {
-//     r: number;
-//     y: number;
-//     b: number;
-// }
 
 // Convertisseur de couleurs
 export default class ColorConverter<T extends ColorType> {
@@ -21,7 +7,7 @@ export default class ColorConverter<T extends ColorType> {
     private type: T;
     private value;
 
-    constructor({type, value} : {type: T, value: T extends "RGB"? RGB : T extends "HSL"? HSL: T extends "HSV"? HSV : T extends "RYB"? RYB : HEX}) {
+    constructor({type, value} : {type: T, value: T extends "RGB"? RGB : T extends "HSL"? HSL: T extends "HSV"? HSV : T extends "RYB"? RYB : T extends "CMYK"? CMYK : T extends "LAB"? LAB : T extends "XYZ"? XYZ : T extends "LCH"? LCH : HEX}) {
         this.type = type;
         this.value = value;
     }
@@ -30,8 +16,17 @@ export default class ColorConverter<T extends ColorType> {
         switch (this.type) {
             case "HSL":
                 return this.calHslToRgb(this.value, toString);
-            // case "HSV": A FAIRE
-            // case "RYB": A FAIRE
+            case "HSV":
+                return this.calHsvToRgb(this.value, toString);
+            case "RYB":
+                return this.calRybToRgb(this.value, toString);
+            case "CMYK":
+                return this.calCmykToRgb(this.value, toString);
+            case "LAB":
+                
+            case "XYZ":
+                return this.calXyzToRgb(this.value, toString)
+                
             default:
 
                 const isValidHex = colorCheck(this.value).toString().replace(/^#/, '');
@@ -95,6 +90,153 @@ export default class ColorConverter<T extends ColorType> {
             if (toString) return `rgb(${r}, ${g}, ${b})`;
             else return { r, g, b };
         }
+    }
+    private calHsvToRgb(hsv: HSV, toString?: boolean) {
+        
+        const h = hsv.h / 360;
+        const s = hsv.s / 100;
+        const v = hsv.v / 100;
+        const a = hsv.a
+
+        let r: number, g: number, b: number;
+
+        const i = Math.floor(h * 6);
+        const f = h * 6 - i;
+        const p = v * (1 - s);
+        const q = v * (1 - f * s);
+        const t = v * (1 - (1 - f) * s);
+
+        switch (i % 6) {
+            case 0: r = v; g = t; b = p; break;
+            case 1: r = q; g = v; b = p; break;
+            case 2: r = p; g = v; b = t; break;
+            case 3: r = p; g = q; b = v; break;
+            case 4: r = t; g = p; b = v; break;
+            case 5: r = v; g = p; b = q; break;
+        }
+        
+        r = Math.round(r * 255), g = Math.round(g * 255), b = Math.round(b * 255)
+
+        if (a) {
+            if (toString) return `rgba(${r}, ${g}, ${b}, ${a})`;
+            else return { r, g, b, a };
+        } else {
+            if (toString) return `rgb(${r}, ${g}, ${b})`;
+            else return { r, g, b };
+        }
+    }
+    private calRybToRgb(ryb: RYB, toString?: boolean) {
+        
+        const r2 = ryb.r / 100;
+        const y = ryb.y / 100;
+        const b2 = ryb.b / 100;
+        const a = ryb.a
+
+        let r: number, g: number, b: number;
+    
+        r = r2 * 0.99 + y * 0.15 + b2 * 0.15;
+        g = y * 0.99 + r2 * 0.15 + b2 * 0.15;
+        b = b2 * 0.99 + r2 * 0.15 + y * 0.15;
+        
+        r = Math.round(r * 255), g = Math.round(g * 255), b = Math.round(b * 255)
+
+        if (a) {
+            if (toString) return `rgba(${r}, ${g}, ${b}, ${a})`;
+            else return { r, g, b, a };
+        } else {
+            if (toString) return `rgb(${r}, ${g}, ${b})`;
+            else return { r, g, b };
+        }
+    }
+    private calCmykToRgb(cmyk: CMYK, toString?: boolean) {
+        
+        const c = cmyk.c / 100;
+        const m = cmyk.m / 100;
+        const y = cmyk.y / 100;
+        const k = cmyk.k / 100;
+        const a = cmyk.a
+
+        let r: number, g: number, b: number;
+
+        r = 1 - Math.min(1, c * (1 - k) + k);
+        g = 1 - Math.min(1, m * (1 - k) + k);
+        b = 1 - Math.min(1, y * (1 - k) + k);
+        
+        r = Math.round(r * 255), g = Math.round(g * 255), b = Math.round(b * 255)
+
+        if (a) {
+            if (toString) return `rgba(${r}, ${g}, ${b}, ${a})`;
+            else return { r, g, b, a };
+        } else {
+            if (toString) return `rgb(${r}, ${g}, ${b})`;
+            else return { r, g, b };
+        }
+    }
+    private calLabToXyz(lab: LAB, toString?: boolean) {
+
+        const y = (lab.l + 16) / 116;
+        const x = Number(lab.a) / 500 + y;
+        const z = y - Number(lab.b) / 200;
+    
+        const fy = Math.pow(y, 3) > 0.008856 ? Math.pow(y, 3) : (y - 16 / 116) / 7.787;
+        const fx = Math.pow(x, 3) > 0.008856 ? Math.pow(x, 3) : (x - 16 / 116) / 7.787;
+        const fz = Math.pow(z, 3) > 0.008856 ? Math.pow(z, 3) : (z - 16 / 116) / 7.787;
+    
+        return {
+            x: fx * 95.047,
+            y: fy * 100.0,
+            z: fz * 108.883
+        };
+    }
+    private calXyzToRgb(xyz: XYZ, toString?: boolean) {
+
+        const x = xyz.x / 100.0;
+        const y = xyz.y / 100.0;
+        const z = xyz.z / 100.0;
+    
+        let r = x * 3.2406 + y * -1.5372 + z * -0.4986;
+        let g = x * -0.9689 + y * 1.8758 + z * 0.0415;
+        let b = x * 0.0557 + y * -0.2040 + z * 1.0570;
+    
+        r = r > 0.0031308 ? 1.055 * Math.pow(r, 1 / 2.4) - 0.055 : 12.92 * r;
+        g = g > 0.0031308 ? 1.055 * Math.pow(g, 1 / 2.4) - 0.055 : 12.92 * g;
+        b = b > 0.0031308 ? 1.055 * Math.pow(b, 1 / 2.4) - 0.055 : 12.92 * b;
+    
+        return {
+            r: Math.round(Math.max(0, Math.min(1, r)) * 255),
+            g: Math.round(Math.max(0, Math.min(1, g)) * 255),
+            b: Math.round(Math.max(0, Math.min(1, b)) * 255),
+            a: 1 // Par défaut, l'opacité est définie à 1 (opaque)
+        };
+    }
+    private calLchToRgb(lch: LCH, toString?: boolean) {
+        const { l, c, h } = lch;
+
+        // Convertir degrés en radians
+        const radian = (degree: number) => (degree * Math.PI) / 180;
+    
+        // Conversion LCH en Lab
+        const a = c * Math.cos(radian(h));
+        const b = c * Math.sin(radian(h));
+    
+        // Conversion Lab en XYZ
+        const y = (l + 16) / 116;
+        const x = a / 500 + y;
+        const z = y - b / 200;
+    
+        const xyzToRgb = (c: number) => {
+            if (c > 0.2069) return Math.pow(c, 3);
+            else return (c - 16 / 116) / 7.787;
+        };
+    
+        const xyz: [number, number, number] = [
+            xyzToRgb(x) * 95.047,
+            xyzToRgb(y) * 100.0,
+            xyzToRgb(z) * 108.883
+        ];
+
+    
+        return xyz;
     }
 
 
@@ -239,16 +381,6 @@ export default class ColorConverter<T extends ColorType> {
     }
 
 
-
-    
-// RGB To CMYK
-// RGB To LAB
-
-    // CMJN (Cyan, Magenta, Jaune, Noir) :
-
-    // Format : cmyk(cyan, magenta, yellow, black)
-    // Exemple : cmyk(0%, 100%, 100%, 0%) (rouge pur)
-
     // Lab (CIELAB) :
 
     // Format : lab(L*, a*, b*)
@@ -272,19 +404,19 @@ export default class ColorConverter<T extends ColorType> {
     // Format : ypbpr(y, pb, pr)
     // Exemple : ypbpr(0.59, -0.28, 0.36)
 
-    public rgbToRyb(rgb: RGB): RYB {
-        // Implémentation de la conversion RGB vers RYB
-        // ...
+    // public rgbToRyb(rgb: RGB): RYB {
+    //     // Implémentation de la conversion RGB vers RYB
+    //     // ...
 
-        return { r: 255, y: 255, b: 255 };
-    }
+    //     return { r: 255, y: 255, b: 255 };
+    // }
 
-    public rybToRgb(ryb: RYB): RGB {
-        // Implémentation de la conversion RYB vers RGB
-        // ...
+    // public rybToRgb(ryb: RYB): RGB {
+    //     // Implémentation de la conversion RYB vers RGB
+    //     // ...
 
-        return { r: 255, g: 255, b: 255 };
-    }
+    //     return { r: 255, g: 255, b: 255 };
+    // }
 }
 
 
